@@ -1,17 +1,42 @@
-# Lexora - Legal Case Management System
+# Lexora - Production-Ready Legal Case Management System
 
-Lexora is a production-level Software-as-a-Service (SaaS) Legal Case Management System designed for law firms. It optimizes legal workflows by centralizing client information, organizing legal matters, securing document storage, tracking billable time, and generating invoices.
+Lexora is a modern, production-ready Legal Case Management System (SaaS) built specifically for law firms, legal counsels, and attorneys. It streamlines end-to-end legal operations by centralizing client records, tracking court cases and hearings, securing document storage and inline previews, dispatching automated email notifications, and providing real-time dashboard analytics.
 
 ---
 
-## 🚀 Tech Stack
+## 🚀 Features
 
-- **Frontend:** React (JavaScript SPA) + Vite (Build Tool & Development Server)
-- **Backend:** FastAPI (Python ASGI web framework for high performance REST APIs)
-- **Database:** MySQL (Relational Database Service)
-- **ORM:** SQLAlchemy (Object-Relational Mapping layer)
-- **Authentication:** JSON Web Tokens (JWT) with Role-Based Access Control (RBAC)
-- **Version Control:** Git
+- **Authentication & Security:** JWT access token + refresh token rotation, bcrypt password hashing, and email-based password resets via Gmail SMTP.
+- **Client Management:** Comprehensive client profiles with contact history, active cases tracking, and search filtering.
+- **Case File Tracking:** Automated case number generation (`LEX-YYYY-XXXX`), priority tagging, court details management, and detailed case timeline views.
+- **Court Hearing Scheduling:** Chronological hearing calendars, judge assignments, courtroom details, and upcoming trial alerts.
+- **Document Management System (DMS):** Secure multipart file uploads (PDFs, images, docs), inline browser document previews (`<iframe>`/`<img>`), and forced attachment downloads.
+- **Global Search Engine:** Instant cross-entity wildcard search across clients, cases, and legal document attachments.
+- **Real-Time Notification Hub:** In-app dropdown notification badge and background email notifications for case, hearing, and document events.
+- **Executive Analytics Dashboard:** Key performance indicator (KPI) metric cards, upcoming calendar widgets, and activity feeds.
+
+---
+
+## 🛠️ Tech Stack
+
+### Frontend
+- **Framework:** React 19 (Single Page Application architecture)
+- **Build Tool:** Vite
+- **HTTP Client:** Axios (custom instance with JWT bearer interceptor & auto refresh queue)
+- **Styling:** Vanilla CSS + Tailwind CSS v4 utilities with sleek dark mode aesthetics
+- **Icons & Typography:** Material Symbols Outlined & Inter font
+
+### Backend
+- **Framework:** FastAPI (Python 3.10+ ASGI web service)
+- **Server:** Uvicorn ASGI production server
+- **Validation:** Pydantic & Pydantic-Settings
+- **Authentication:** Python-Jose (JWT algorithm `HS256`) + Passlib/Bcrypt
+- **Email Dispatcher:** Python `smtplib` + MIME email builder
+
+### Database
+- **Database Engine:** MySQL 8.0+
+- **ORM Layer:** SQLAlchemy 2.0+ declarative models
+- **Database Driver:** PyMySQL
 
 ---
 
@@ -19,108 +44,199 @@ Lexora is a production-level Software-as-a-Service (SaaS) Legal Case Management 
 
 ```text
 Legalcase_management/
-├── backend/                   # FastAPI Backend Application
-│   ├── app/                   # Main application package
-│   │   ├── core/              # Security config, JWT authentication, settings parser
-│   │   ├── crud/              # Database CRUD functions (decoupled from controllers)
-│   │   ├── models/            # SQLAlchemy database models (MySQL schema representation)
-│   │   ├── routers/           # FastAPI API routers (request handlers)
-│   │   ├── schemas/           # Pydantic schemas (request/response validation)
-│   │   ├── database.py        # Database connection configuration (Engine, SessionLocal)
-│   │   ├── config.py          # App settings validation via pydantic-settings
-│   │   └── main.py            # FastAPI main entrypoint and CORS configurations
-│   ├── tests/                 # Automated pytest scripts
-│   ├── .env.example           # Reference environment variables for local configuration
-│   └── requirements.txt       # Python dependencies list
-├── frontend/                  # React + Vite Frontend Application
-│   ├── src/                   # React source files
-│   │   ├── assets/            # Static files (images, icons)
-│   │   ├── components/        # Reusable UI component modules
-│   │   ├── pages/             # Layout viewpages (Dashboard, Cases, Billing, etc.)
-│   │   ├── App.jsx            # Main app router wrapper
-│   │   └── main.jsx           # Mounting React to DOM
-│   ├── package.json           # Frontend dependency manifest
-│   └── vite.config.js         # Vite configuration settings
-└── .gitignore                 # Tells git which files/folders to ignore in version tracking
+├── backend/                        # FastAPI Backend Service
+│   ├── app/                        # Application Source Code
+│   │   ├── core/                   # Central Settings, Security & Email Utilities
+│   │   │   ├── config.py           # Pydantic Settings Manager
+│   │   │   ├── security.py         # Password Hashing & JWT Token Utilities
+│   │   │   └── email.py            # SMTP Email Dispatcher
+│   │   ├── crud/                   # Database Access Layer (CRUD Operations)
+│   │   ├── models/                 # SQLAlchemy Database Schema Definitions
+│   │   ├── routers/                # FastAPI Feature API Routers
+│   │   ├── schemas/                # Pydantic Request/Response Validation Schemas
+│   │   ├── services/               # Background Tasks & Notification Services
+│   │   ├── database.py             # SQLAlchemy Engine & Session Configuration
+│   │   ├── dependencies.py         # FastAPI DB & Auth Dependency Injectors
+│   │   ├── main.py                 # FastAPI Application Entrypoint & CORS Config
+│   │   └── seed.py                 # Initial Database Seed Generator
+│   ├── uploads/                    # Physical Document Storage Directory
+│   ├── .env                        # Local Environment Configuration (Ignored by Git)
+│   ├── .env.example                # Environment Variable Template Blueprint
+│   └── requirements.txt            # Backend Dependencies Manifest
+├── frontend/                       # React + Vite Frontend Client
+│   ├── src/                        # React Source Code
+│   │   ├── assets/                 # SVGs and Images
+│   │   ├── components/             # Reusable UI Components (Navbar, Header, Modals)
+│   │   ├── pages/                  # Top-level Page Views (Dashboard, Cases, Clients, etc.)
+│   │   ├── routes/                 # Protected App Router Wrapper
+│   │   └── services/               # Axios API Service Wrappers
+│   ├── .env                        # Local Client Environment (Ignored by Git)
+│   ├── .env.example                # Client Environment Blueprint Template
+│   ├── package.json                # Frontend Dependencies Manifest
+│   └── vite.config.js              # Vite Build Configuration
+└── README.md                       # Project Documentation
 ```
 
 ---
 
-## ⚙️ Setup Instructions
+## ⚙️ Installation & Setup
 
-### 1. Prerequisites
-Ensure you have the following installed on your machine:
-*   [Python 3.10+](https://www.python.org/downloads/)
-*   [Node.js v18+](https://nodejs.org/)
-*   [MySQL Server](https://dev.mysql.com/downloads/installer/)
+### Prerequisites
+- **Python:** `v3.10` or higher
+- **Node.js:** `v18.0` or higher (with `npm`)
+- **Database:** MySQL Server 8.0+ running on `localhost:3306`
 
 ---
 
-### 2. Backend Setup
-1. Navigate to the backend directory:
+### Backend Setup
+
+1. **Navigate to the backend folder:**
    ```bash
    cd backend
    ```
-2. Create and activate a Python virtual environment:
+
+2. **Create and activate a virtual environment:**
    - **Windows (PowerShell):**
      ```powershell
      python -m venv .venv
-     .venv\Scripts\Activate.ps1
+     .\.venv\Scripts\Activate.ps1
      ```
    - **macOS / Linux:**
      ```bash
      python3 -m venv .venv
      source .venv/bin/activate
      ```
-3. Install all dependencies:
+
+3. **Install dependencies:**
    ```bash
    pip install -r requirements.txt
    ```
-4. Copy the environment template file and set up your local variables:
+
+4. **Configure Environment Variables:**
+   Copy `.env.example` to create your local `.env` file:
    ```bash
    cp .env.example .env
    ```
-5. Run the FastAPI development server:
-   ```bash
-   uvicorn app.main:app --reload
+   Update `DATABASE_URL` with your MySQL credentials:
+   ```env
+   DATABASE_URL="mysql+pymysql://root:YOUR_MYSQL_PASSWORD@localhost:3306/legalcase_management"
    ```
-   *The backend will be running at:* `http://127.0.0.1:8000`  
-   *Interactive Swagger Documentation:* `http://127.0.0.1:8000/docs`
+
+5. **Database Initialization & Seeding:**
+   Ensure MySQL is running and create the database schema if needed:
+   ```sql
+   CREATE DATABASE IF NOT EXISTS legalcase_management;
+   ```
+   *The database tables and initial seed data (admin account & sample records) will auto-generate on initial backend launch.*
+
+6. **Run the Backend Server:**
+   ```bash
+   uvicorn app.main:app --reload --port 8000
+   ```
+   The backend API will run at `http://localhost:8000`.
 
 ---
 
-### 3. Frontend Setup
-1. Navigate to the frontend directory:
+### Frontend Setup
+
+1. **Navigate to the frontend folder:**
    ```bash
    cd ../frontend
    ```
-2. Install npm modules:
+
+2. **Install Node dependencies:**
    ```bash
    npm install
    ```
-3. Run the Vite development server:
+
+3. **Configure Frontend Environment Variables:**
+   Copy `.env.example` to create `.env`:
+   ```bash
+   cp .env.example .env
+   ```
+   Ensure `VITE_API_URL` points to your backend server:
+   ```env
+   VITE_API_URL=http://localhost:8000/api/v1
+   ```
+
+4. **Run the Frontend Development Server:**
    ```bash
    npm run dev
    ```
-   *The frontend will be running at:* `http://localhost:5173`
+   The React client application will open at `http://localhost:5173`.
 
 ---
 
-## ✨ Features
+## 🔑 Environment Variables Overview
 
-- **Role-Based Access Control (RBAC):** Separate capabilities for Admins, Attorneys, and Paralegals.
-- **Client & Matter Management:** Centralized tracking of client contacts, court matter statuses, and timelines.
-- **Document Management System (DMS):** File organization tied specifically to cases, with metadata tags.
-- **Task & Calendar Coordination:** Track court hearings, filing dates, and task assignments with reminders.
-- **Legal Billing & Invoicing:** Track billable hours and expenses, automatically generate invoices, and log payment statuses.
+### Backend Environment Variables (`backend/.env`)
+
+| Variable | Description | Default / Example Value |
+| :--- | :--- | :--- |
+| `PROJECT_NAME` | Name of the backend application | `"Lexora Legal Case Management System"` |
+| `VERSION` | API Version | `"1.0.0"` |
+| `ENVIRONMENT` | Deployment stage | `"development"` / `"production"` |
+| `DEBUG` | FastAPI debug mode | `True` |
+| `SECRET_KEY` | HMAC secret key for signing JWTs | `"SUPER_SECRET_KEY_FOR_JWT"` |
+| `ALGORITHM` | Cryptographic algorithm | `"HS256"` |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | Access token TTL in minutes | `30` |
+| `REFRESH_TOKEN_EXPIRE_DAYS` | Refresh token TTL in days | `7` |
+| `DATABASE_URL` | MySQL SQLAlchemy connection URL | `"mysql+pymysql://root:pass@localhost:3306/legalcase_management"` |
+| `UPLOAD_DIR` | Directory path for document storage | `"uploads"` |
+| `CORS_ORIGINS` | JSON list of allowed origin URLs | `'["http://localhost:5173"]'` |
+| `MAIL_USERNAME` | SMTP Gmail username | `"your_gmail@gmail.com"` |
+| `MAIL_PASSWORD` | SMTP 16-character App Password | `"your_app_password"` |
+| `MAIL_SERVER` | SMTP host | `"smtp.gmail.com"` |
+| `MAIL_PORT` | SMTP TLS port | `587` |
+
+### Frontend Environment Variables (`frontend/.env`)
+
+| Variable | Description | Default / Example Value |
+| :--- | :--- | :--- |
+| `VITE_API_URL` | Base REST API endpoint URL | `http://localhost:8000/api/v1` |
 
 ---
 
-## 🗺️ Roadmap & Timeline
+## 📖 API Documentation
 
-- [x] **Day 1:** System architecture design, directory structures, framework initialization, Git setup.
-- [ ] **Days 2–5:** Database architecture, MySQL schema, SQLAlchemy migrations, and JWT Authentication.
-- [ ] **Days 6–10:** Client/Matter CRUD APIs, dashboard design, and Google Stitch UI integrations.
-- [ ] **Days 11–15:** Legal Document Uploads, calendar synchronization, and tasks allocation systems.
-- [ ] **Days 16–18:** Billable hours logging, automated invoice generators, and PDF exports.
-- [ ] **Days 19–20:** Testing (pytest + React testing), performance optimizations, and cloud deployment prep.
+The backend service automatically generates interactive OpenAPI documentation:
+
+- **Swagger UI Interactive Docs:** `http://localhost:8000/docs`
+- **ReDoc Technical Schema:** `http://localhost:8000/redoc`
+- **Raw OpenAPI JSON Spec:** `http://localhost:8000/api/v1/openapi.json`
+
+---
+
+## 📸 Screenshots Placeholder
+
+> *Screenshots of the Lexora Legal platform:*
+
+```text
+┌────────────────────────────────────────────────────────────────────────┐
+│                        LEXORA DASHBOARD OVERVIEW                       │
+│  [Total Cases: 24]   [Active Clients: 18]   [Upcoming Hearings: 5]    │
+└────────────────────────────────────────────────────────────────────────┘
+```
+
+- **Dashboard:** Real-time KPI summary widgets and upcoming trial schedule.
+- **Cases View:** Filterable list of legal cases with priority tags.
+- **Case Detail Page:** Comprehensive matter timeline, client card, and document vault.
+- **Document Vault:** Secure upload form and inline PDF/image preview modal.
+
+---
+
+## 🚀 Future Improvements
+
+- **Role-Based Granular Permissions:** Custom permission scopes for Lead Attorneys, Associate Counsels, and Paralegals.
+- **Automated Billing & Invoicing:** Billable time logs, invoice PDF export generation, and payment gateway integration.
+- **Calendar Integrations:** Two-way sync with Google Calendar and Microsoft Outlook for hearing schedules.
+- **Multi-Tenant Support:** Firm isolation for multi-branch legal organizations.
+
+---
+
+## 🛡️ Deployment Notes
+
+1. **Production Web Server:** Run Uvicorn behind a Gunicorn process supervisor or Nginx reverse proxy with SSL (`https://`).
+2. **Database Hardening:** Configure connection pooling and enforce TLS/SSL for MySQL production database connections.
+3. **CORS Restrictions:** Restrict `CORS_ORIGINS` strictly to production frontend domains.
+4. **Secret Key Management:** Generate strong 256-bit secret keys (`openssl rand -hex 32`) and inject via system secrets managers.
