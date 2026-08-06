@@ -3,13 +3,19 @@ from app.models.user import User
 from app.schemas.user import UserCreate
 from app.core.security import get_password_hash
 
+from sqlalchemy import func
+
 def get_user_by_id(db: Session, user_id: int) -> User:
     """Retrieve a single user record by database primary key ID."""
     return db.query(User).filter(User.id == user_id).first()
 
 def get_user_by_email(db: Session, email: str) -> User:
-    """Retrieve a single user record by unique email address."""
-    return db.query(User).filter(User.email == email).first()
+    """Retrieve a single user record by unique email address (case-insensitive)."""
+    if not email:
+        return None
+    cleaned_email = email.strip().lower()
+    return db.query(User).filter(func.lower(User.email) == cleaned_email).first()
+
 
 def create_user(db: Session, user_in: UserCreate) -> User:
     """Create a new user, hashing their password before committing to the database."""

@@ -57,19 +57,30 @@ def send_password_reset_email(email: str, token_url: str) -> None:
 
     msg.attach(MIMEText(html_body, "html"))
 
-    # ── Send via SMTP (TLS) ───────────────────────────────────────────────────
+    # ── Send via SMTP (TLS / SSL fallback) ───────────────────────────────────
+    sent = False
     try:
         with smtplib.SMTP(settings.MAIL_SERVER, settings.MAIL_PORT, timeout=10) as server:
             server.ehlo()
             server.starttls()
             server.login(settings.MAIL_USERNAME, settings.MAIL_PASSWORD)
-            server.sendmail(settings.MAIL_FROM, email, msg.as_string())
-        print(f"[EMAIL SUCCESS] Password-reset email sent to {email}")
-
+            server.sendmail(settings.MAIL_FROM or settings.MAIL_USERNAME, email, msg.as_string())
+        print(f"[EMAIL SUCCESS] Password-reset email sent to {email} via STARTTLS")
+        sent = True
     except smtplib.SMTPAuthenticationError as e:
         print(
             f"[EMAIL ERROR] SMTP authentication failed — check MAIL_USERNAME / MAIL_PASSWORD in .env. Detail: {e}"
         )
     except Exception as exc:
-        print(f"[EMAIL ERROR] Failed to send password-reset email: {exc}")
+        print(f"[EMAIL WARNING] Primary STARTTLS send failed: {exc}. Attempting SMTP_SSL fallback on port 465...")
+
+    if not sent:
+        try:
+            with smtplib.SMTP_SSL(settings.MAIL_SERVER, 465, timeout=10) as server:
+                server.login(settings.MAIL_USERNAME, settings.MAIL_PASSWORD)
+                server.sendmail(settings.MAIL_FROM or settings.MAIL_USERNAME, email, msg.as_string())
+            print(f"[EMAIL SUCCESS] Password-reset email sent to {email} via SSL (port 465)")
+        except Exception as ssl_exc:
+            print(f"[EMAIL ERROR] Failed to send password-reset email via SSL fallback: {ssl_exc}")
+
 
