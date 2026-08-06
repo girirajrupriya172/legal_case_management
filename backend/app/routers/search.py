@@ -69,10 +69,11 @@ def global_search(
     """
     search_pattern = f"%{q}%"
 
-    # 1. Search Clients by name, email, phone, address
+    # 1. Search Clients by name, email, phone, address (scoped to current user)
     clients = (
         db.query(Client)
         .filter(
+            Client.owner_id == current_user.id,
             or_(
                 Client.full_name.ilike(search_pattern),
                 Client.email.ilike(search_pattern),
@@ -84,10 +85,12 @@ def global_search(
         .all()
     )
 
-    # 2. Search Cases by case number, title, court details
+    # 2. Search Cases by case number, title, court details (scoped to current user's clients)
     cases = (
         db.query(Case)
+        .join(Client)
         .filter(
+            Client.owner_id == current_user.id,
             or_(
                 Case.case_number.ilike(search_pattern),
                 Case.title.ilike(search_pattern),
@@ -98,10 +101,13 @@ def global_search(
         .all()
     )
 
-    # 3. Search Documents by title, file name, document type, notes
+    # 3. Search Documents by title, file name, document type, notes (scoped to current user's clients)
     documents = (
         db.query(Document)
+        .join(Case)
+        .join(Client)
         .filter(
+            Client.owner_id == current_user.id,
             or_(
                 Document.title.ilike(search_pattern),
                 Document.file_name.ilike(search_pattern),
@@ -112,6 +118,7 @@ def global_search(
         .limit(limit)
         .all()
     )
+
 
     total_results = len(clients) + len(cases) + len(documents)
 

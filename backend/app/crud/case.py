@@ -1,5 +1,7 @@
+from typing import Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
+
 import datetime
 from app.models.case import Case
 from app.models.client import Client
@@ -19,7 +21,8 @@ def get_cases(
     limit: int = 10,
     search: str = None,
     status: str = None,
-    priority: str = None
+    priority: str = None,
+    owner_id: Optional[int] = None
 ):
     """
     Retrieve case records with server-side page pagination, searching, and filtering.
@@ -27,6 +30,10 @@ def get_cases(
     """
     # 1. Base query joining Case with Client to load related data
     query = db.query(Case).outerjoin(Client)
+
+    # Filter by owner_id if provided
+    if owner_id is not None:
+        query = query.filter(Client.owner_id == owner_id)
 
     # 2. Search filter: matches case number, title, court details, or client full name
     if search:
@@ -61,6 +68,7 @@ def get_cases(
     )
 
     return cases, total, total_pages
+
 
 def create_case(db: Session, case_in: CaseCreate):
     """

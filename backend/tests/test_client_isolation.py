@@ -1,9 +1,13 @@
-from fastapi.testclient import TestClient
+import os
+from dotenv import load_dotenv
+load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
 
+from fastapi.testclient import TestClient
 from app.main import app
 from app.database import SessionLocal, Base, engine
 from app.models.user import User
 from app.models.client import Client
+
 
 client = TestClient(app)
 

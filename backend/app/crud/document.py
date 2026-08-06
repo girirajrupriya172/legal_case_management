@@ -3,8 +3,10 @@ from sqlalchemy import or_
 from typing import Optional, Tuple, List
 from app.models.document import Document
 from app.models.case import Case
+from app.models.client import Client
 from app.models.user import User
 from app.crud.common import calculate_pagination
+
 
 def create_document(
     db: Session,
@@ -76,15 +78,20 @@ def get_all_documents(
     limit: int = 10,
     search: Optional[str] = None,
     document_type: Optional[str] = None,
-    case_id: Optional[int] = None
+    case_id: Optional[int] = None,
+    owner_id: Optional[int] = None
 ) -> Tuple[List[Document], int, int]:
     """
     Retrieve documents across all cases with server-side page pagination, searching, and filtering.
     """
-    query = db.query(Document).outerjoin(Case).outerjoin(User)
+    query = db.query(Document).outerjoin(Case).outerjoin(Client).outerjoin(User)
+
+    if owner_id is not None:
+        query = query.filter(Client.owner_id == owner_id)
 
     if case_id:
         query = query.filter(Document.case_id == case_id)
+
 
     if document_type:
         query = query.filter(Document.document_type == document_type)

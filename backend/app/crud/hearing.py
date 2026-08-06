@@ -28,7 +28,8 @@ def get_hearings(
     client_id: Optional[int] = None,
     status: Optional[str] = None,
     search: Optional[str] = None,
-    upcoming_only: bool = False
+    upcoming_only: bool = False,
+    owner_id: Optional[int] = None
 ) -> Tuple[List[Hearing], int, int, int]:
     """
     Retrieve hearings with filtering, pagination, search, and aggregate metrics.
@@ -44,9 +45,14 @@ def get_hearings(
         .outerjoin(Client)
     )
 
+    # Filter by owner_id if provided
+    if owner_id is not None:
+        query = query.filter(Client.owner_id == owner_id)
+
     # 2. Filter by specific case_id if requested
     if case_id:
         query = query.filter(Hearing.case_id == case_id)
+
 
     # 3. Filter by specific client_id if requested
     if client_id:

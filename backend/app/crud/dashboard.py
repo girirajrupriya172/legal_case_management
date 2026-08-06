@@ -1,38 +1,46 @@
 from datetime import datetime, date, time
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 from app.models.client import Client
 from app.models.case import Case
 from app.models.hearing import Hearing
 from app.models.task import Task
 
-def get_dashboard_data(db: Session):
+def get_dashboard_data(db: Session, user_id: int):
     """
     Query the database to aggregate statistics, upcoming hearings, and recent activities
-    for the main dashboard.
+    for the main dashboard for a specific user (owner).
     """
-    # 1. Gather aggregate statistics counts
-    total_clients = db.query(Client).count()
-    active_cases = db.query(Case).filter(Case.status.in_(["Ongoing", "Pending"])).count()
+    # 1. Gather aggregate statistics counts scoped to current user
+    total_clients = db.query(Client).filter(Client.owner_id == user_id).count()
+    
+    active_cases = db.query(Case).join(Client).filter(
+        Client.owner_id == user_id,
+        Case.status.in_(["Ongoing", "Pending"])
+    ).count()
     
     # Define today's time range boundary to filter schedule
     today_start = datetime.combine(date.today(), time.min)
     today_end = datetime.combine(date.today(), time.max)
     
-    todays_hearings_count = db.query(Hearing).filter(
+    todays_hearings_count = db.query(Hearing).join(Client).filter(
+        Client.owner_id == user_id,
         Hearing.hearing_date.between(today_start, today_end)
     ).count()
     
-    upcoming_hearings_count = db.query(Hearing).filter(
+    upcoming_hearings_count = db.query(Hearing).join(Client).filter(
+        Client.owner_id == user_id,
         Hearing.hearing_date > today_end
     ).count()
     
-    pending_tasks_count = db.query(Task).filter(
+    pending_tasks_count = db.query(Task).outerjoin(Case).outerjoin(Client).filter(
+        or_(Task.user_id == user_id, Client.owner_id == user_id),
         Task.status == "Pending"
     ).count()
     
     # 2. Query hearings scheduled starting today (ordered chronologically)
-    # Perform joins on Case and Client models to load related titles and names
     hearings_query = db.query(Hearing).join(Case).join(Client).filter(
+        Client.owner_id == user_id,
         Hearing.hearing_date >= today_start
     ).order_by(Hearing.hearing_date.asc()).all()
     
@@ -49,7 +57,10 @@ def get_dashboard_data(db: Session):
         })
 
     # 3. Query recent activities/tasks
-    recent_tasks = db.query(Task).order_by(Task.created_at.desc()).limit(10).all()
+    recent_tasks = db.query(Task).outerjoin(Case).outerjoin(Client).filter(
+        or_(Task.user_id == user_id, Client.owner_id == user_id)
+    ).order_by(Task.created_at.desc()).limit(10).all()
+    
     recent_activities = []
     for t in recent_tasks:
         recent_activities.append({
@@ -72,3 +83,4 @@ def get_dashboard_data(db: Session):
         "upcoming_hearings": upcoming_hearings,
         "recent_activities": recent_activities
     }
+

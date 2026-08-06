@@ -49,8 +49,10 @@ def read_cases(
         limit=limit,
         search=search,
         status=status,
-        priority=priority
+        priority=priority,
+        owner_id=current_user.id
     )
+
 
     return PaginatedResponse(
         items=cases,

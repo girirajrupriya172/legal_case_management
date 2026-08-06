@@ -25,4 +25,5 @@ def read_dashboard_stats(
     Retrieve aggregated statistics, upcoming calendar schedule, and recent notification logs
     for the main dashboard. Protected endpoint requiring a valid JWT Authorization token.
     """
-    return get_dashboard_data(db)
+    return get_dashboard_data(db, user_id=current_user.id)
+

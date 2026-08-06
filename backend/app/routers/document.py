@@ -85,8 +85,10 @@ def list_documents(
         limit=limit,
         search=search,
         document_type=document_type,
-        case_id=case_id
+        case_id=case_id,
+        owner_id=current_user.id
     )
+
 
     return PaginatedResponse(
         items=documents,

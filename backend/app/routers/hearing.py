@@ -61,8 +61,10 @@ def read_hearings(
         client_id=client_id,
         status=status,
         search=search,
-        upcoming_only=upcoming_only
+        upcoming_only=upcoming_only,
+        owner_id=current_user.id
     )
+
 
     return {
         "hearings": hearings,
