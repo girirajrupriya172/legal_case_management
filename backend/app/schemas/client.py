@@ -19,12 +19,14 @@ class ClientUpdate(ClientBase):
 
 class ClientResponse(ClientBase):
     id: int
+    owner_id: int
     created_at: datetime
     updated_at: datetime
     case_count: int = 0
 
     class Config:
         from_attributes = True
+
 
 class ClientListResponse(BaseModel):
     clients: List[ClientResponse]
@@ -61,6 +63,7 @@ class ClientProfileActivityResponse(BaseModel):
 
 class ClientProfileResponse(BaseModel):
     id: int
+    owner_id: int
     full_name: str
     email: EmailStr
     phone: Optional[str] = None
@@ -72,4 +75,5 @@ class ClientProfileResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
 

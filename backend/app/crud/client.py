@@ -8,16 +8,17 @@ from app.crud.common import calculate_pagination
 
 def get_clients(
     db: Session,
+    owner_id: int,
     page: int = 1,
     limit: int = 10,
     search: str = None,
     filter_status: str = None
 ):
     """
-    Retrieve clients with support for search, server-side page pagination, filter by case status, and case count calculations.
+    Retrieve clients owned by the specified owner_id with support for search, server-side page pagination, filter by case status, and case count calculations.
     """
-    # 1. Base query: Join Client with Case and calculate case count using GROUP BY
-    query = db.query(Client, func.count(Case.id).label("case_count")).outerjoin(Case).group_by(Client.id)
+    # 1. Base query: Join Client with Case, filter by owner_id, and calculate case count using GROUP BY
+    query = db.query(Client, func.count(Case.id).label("case_count")).outerjoin(Case).filter(Client.owner_id == owner_id).group_by(Client.id)
 
     # 2. Apply search filters if search parameter is provided
     if search:
@@ -53,6 +54,7 @@ def get_clients(
     for client, case_count in results:
         clients_list.append({
             "id": client.id,
+            "owner_id": client.owner_id,
             "full_name": client.full_name,
             "email": client.email,
             "phone": client.phone,
@@ -70,22 +72,23 @@ def get_client_by_id(db: Session, client_id: int):
     """
     return db.query(Client).filter(Client.id == client_id).first()
 
-def get_client_by_email(db: Session, email: str):
+def get_client_by_email(db: Session, email: str, owner_id: int):
     """
-    Retrieve a single client record by their unique email.
+    Retrieve a single client record by their email belonging to a specific owner.
     Useful for duplicate checks during creation.
     """
-    return db.query(Client).filter(Client.email == email).first()
+    return db.query(Client).filter(Client.email == email, Client.owner_id == owner_id).first()
 
-def create_client(db: Session, client_in: ClientCreate):
+def create_client(db: Session, client_in: ClientCreate, owner_id: int):
     """
-    Insert a new client record into the database.
+    Insert a new client record into the database bound to current_user.id.
     """
     db_client = Client(
         full_name=client_in.full_name,
         email=client_in.email,
         phone=client_in.phone,
-        address=client_in.address
+        address=client_in.address,
+        owner_id=owner_id
     )
     db.add(db_client)
     db.commit()
@@ -116,16 +119,16 @@ def delete_client(db: Session, db_client: Client):
     return db_client
 
 
-def get_client_profile(db: Session, client_id: int):
+def get_client_profile(db: Session, client_id: int, owner_id: int = None):
     """
     Retrieve a single client by ID along with their related cases and combined activities.
-    Activities include:
-    - Hearings associated with the client
-    - Tasks associated with the client's cases
-    Ordered by event/creation date descending.
+    If owner_id is provided, enforces that the client belongs to owner_id.
     """
     # 1. Fetch client
-    client = db.query(Client).filter(Client.id == client_id).first()
+    query = db.query(Client).filter(Client.id == client_id)
+    if owner_id is not None:
+        query = query.filter(Client.owner_id == owner_id)
+    client = query.first()
     if not client:
         return None
 
@@ -161,6 +164,7 @@ def get_client_profile(db: Session, client_id: int):
 
     return {
         "id": client.id,
+        "owner_id": client.owner_id,
         "full_name": client.full_name,
         "email": client.email,
         "phone": client.phone,
@@ -170,4 +174,5 @@ def get_client_profile(db: Session, client_id: int):
         "cases": client.cases,
         "activities": activities
     }
+
 

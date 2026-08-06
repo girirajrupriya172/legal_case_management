@@ -19,4 +19,6 @@ class User(Base):
 
     # Relationships
     documents = relationship("Document", back_populates="uploaded_by")
+    clients = relationship("Client", back_populates="owner", cascade="all, delete-orphan")
+
 

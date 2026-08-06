@@ -347,11 +347,12 @@ export default function Clients() {
           <div className="w-16 h-16 bg-surface-container rounded-full flex items-center justify-center mb-4 text-outline">
             <span className="material-symbols-outlined text-3xl">person_search</span>
           </div>
-          <h3 className="text-lg font-bold text-primary mb-2">No Clients Found</h3>
+          <h3 className="text-lg font-bold text-primary mb-2">No clients found.</h3>
           <p className="text-xs sm:text-sm text-on-surface-variant max-w-md">
-            We couldn't find any client records matching your query. Try searching with a different term or clearing active filters.
+            No client records exist in your account. Click "Add Client" above to register your first client.
           </p>
         </div>
+
       ) : (
         <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant/60 shadow-xs overflow-hidden animate-fade-in">
           {/* Responsive Table Scroll Container */}

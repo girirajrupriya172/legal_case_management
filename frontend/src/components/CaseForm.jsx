@@ -154,7 +154,8 @@ export default function CaseForm({ onSuccess, onCancel }) {
             <input
               id="caseTitle"
               type="text"
-              placeholder="e.g. Sterling vs. Global Corp Dispute"
+              placeholder="e.g. Commercial Contract Dispute"
+
               value={formData.title}
               onChange={(e) => {
                 setFormData({ ...formData, title: e.target.value });

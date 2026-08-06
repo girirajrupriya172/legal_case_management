@@ -61,7 +61,7 @@ api.interceptors.response.use(
     if (error.response && error.response.status === 401 && !originalRequest._retry) {
       // Do not attempt refresh for login or refresh endpoints themselves
       if (
-        originalRequest.url.includes("/auth/login") || 
+        originalRequest.url.includes("/auth/login") ||
         originalRequest.url.includes("/auth/refresh")
       ) {
         return Promise.reject(error);

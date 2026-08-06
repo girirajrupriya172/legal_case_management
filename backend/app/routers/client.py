@@ -20,7 +20,7 @@ router = APIRouter()
     "",
     response_model=PaginatedResponse[ClientResponse],
     summary="List clients with pagination and search",
-    description="Retrieve a paginated list of clients with support for search and status filtering.",
+    description="Retrieve a paginated list of clients owned by the currently authenticated user.",
     responses={
         200: {"description": "Paginated list of clients returned successfully."},
         401: {"description": "Authentication token missing or invalid."},
@@ -36,12 +36,13 @@ def read_clients(
     filter_status: str = Query(None, description="Status filter: active_cases or no_cases")
 ):
     """
-    Retrieve a paginated list of clients.
+    Retrieve a paginated list of clients belonging strictly to current_user.
     Supports search query matching and filtering by active case statuses.
     Requires a valid JWT token in the Authorization header.
     """
     clients, total, total_pages = get_clients(
         db=db,
+        owner_id=current_user.id,
         page=page,
         limit=limit,
         search=search,
@@ -61,7 +62,7 @@ def read_clients(
     response_model=ClientResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Create a new client record",
-    description="Register a new legal client in the system. Validates email uniqueness.",
+    description="Register a new legal client owned by the current authenticated user.",
     responses={
         201: {"description": "Client created successfully."},
         400: {"description": "Client email already exists in system."},
@@ -75,30 +76,31 @@ def add_client(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Register a new client in the system.
-    Validates email uniqueness and inputs before saving.
+    Register a new client bound to current_user.id.
+    Validates email uniqueness per user before saving.
     Requires a valid JWT token.
     """
-    # 1. Check if email already exists
-    existing_client = get_client_by_email(db, email=client_in.email)
+    # 1. Check if email already exists for current user
+    existing_client = get_client_by_email(db, email=client_in.email, owner_id=current_user.id)
     if existing_client:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="A client with this email address already exists in the system."
+            detail="A client with this email address already exists in your account."
         )
     
-    # 2. Call CRUD utility to save to MySQL
-    return create_client(db=db, client_in=client_in)
+    # 2. Call CRUD utility to save to MySQL with owner_id set from current_user
+    return create_client(db=db, client_in=client_in, owner_id=current_user.id)
 
 @router.put(
     "/{client_id}",
     response_model=ClientResponse,
     summary="Update an existing client",
-    description="Update client contact details and address. Validates email uniqueness.",
+    description="Update client details. Returns 403 Forbidden if client belongs to another user.",
     responses={
         200: {"description": "Client updated successfully."},
         400: {"description": "Email address already taken by another client."},
         401: {"description": "Authentication token missing or invalid."},
+        403: {"description": "Forbidden: client belongs to another user."},
         404: {"description": "Client record not found."},
     },
 )
@@ -110,7 +112,7 @@ def modify_client(
 ):
     """
     Update client details (name, email, phone, address).
-    Validates client existence and email uniqueness.
+    Validates user ownership (returns 403 if client belongs to another user).
     Requires a valid JWT token.
     """
     # 1. Check if client exists
@@ -121,26 +123,34 @@ def modify_client(
             detail="Client not found."
         )
     
-    # 2. If email is being changed, check if it's already taken by another client
+    # 2. Check ownership
+    if db_client.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access forbidden: You do not own this client record."
+        )
+    
+    # 3. If email is being changed, check if it's already taken by another client owned by user
     if client_in.email and client_in.email != db_client.email:
-        existing_client = get_client_by_email(db, email=client_in.email)
+        existing_client = get_client_by_email(db, email=client_in.email, owner_id=current_user.id)
         if existing_client:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="A client with this email address already exists."
+                detail="A client with this email address already exists in your account."
             )
             
-    # 3. Commit changes to MySQL
+    # 4. Commit changes to MySQL
     return update_client(db=db, db_client=db_client, client_in=client_in)
 
 @router.delete(
     "/{client_id}",
     response_model=ClientResponse,
     summary="Delete a client record",
-    description="Delete a client and all associated case files from the database.",
+    description="Delete a client owned by current user. Returns 403 Forbidden if client belongs to another user.",
     responses={
         200: {"description": "Client deleted successfully."},
         401: {"description": "Authentication token missing or invalid."},
+        403: {"description": "Forbidden: client belongs to another user."},
         404: {"description": "Client record not found."},
     },
 )
@@ -151,6 +161,7 @@ def remove_client(
 ):
     """
     Delete a client and all associated case files.
+    Validates user ownership (returns 403 if client belongs to another user).
     Requires a valid JWT token.
     """
     # 1. Check if client exists
@@ -161,7 +172,14 @@ def remove_client(
             detail="Client not found."
         )
         
-    # 2. Perform deletion
+    # 2. Check ownership
+    if db_client.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access forbidden: You do not own this client record."
+        )
+
+    # 3. Perform deletion
     return delete_client(db=db, db_client=db_client)
 
 
@@ -169,10 +187,11 @@ def remove_client(
     "/{client_id}",
     response_model=ClientProfileResponse,
     summary="Get client detailed profile",
-    description="Retrieve a single client profile including all associated cases and activity logs.",
+    description="Retrieve a single client profile owned by current user. Returns 403 Forbidden if owned by another user.",
     responses={
         200: {"description": "Client profile details returned successfully."},
         401: {"description": "Authentication token missing or invalid."},
+        403: {"description": "Forbidden: client belongs to another user."},
         404: {"description": "Client record not found."},
     },
 )
@@ -182,14 +201,24 @@ def read_client_profile(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Retrieve a single client's detailed profile including cases and activity logs.
+    Retrieve a single client's detailed profile.
+    Requires that client is owned by current_user (returns 403 if owned by another user).
     Requires a valid JWT token.
     """
-    client_profile = get_client_profile(db, client_id=client_id)
-    if not client_profile:
+    db_client = get_client_by_id(db, client_id=client_id)
+    if not db_client:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Client not found."
         )
+    
+    if db_client.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access forbidden: You do not own this client record."
+        )
+
+    client_profile = get_client_profile(db, client_id=client_id, owner_id=current_user.id)
     return client_profile
+
 
