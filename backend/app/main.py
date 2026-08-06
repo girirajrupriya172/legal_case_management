@@ -15,14 +15,9 @@ from app.models import notification as notification_model
 from app.seed import seed_database
 
 # Automatically create all tables defined in models if they don't exist in MySQL
-Base.metadata.create_all(bind=engine)
+#Base.metadata.create_all(bind=engine)
 
 # Run database seed check on startup
-db_session = SessionLocal()
-try:
-    seed_database(db_session)
-finally:
-    db_session.close()
 
 app = FastAPI(
     title=settings.PROJECT_NAME,

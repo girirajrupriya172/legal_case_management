@@ -1,6 +1,37 @@
-import os
-from typing import List
-from pydantic_settings import BaseSettings, SettingsConfigDict
+import json
+from typing import Annotated, Any, List
+from pydantic import BeforeValidator
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
+
+
+def parse_cors_origins(v: Any) -> List[str]:
+    """Parse CORS_ORIGINS from env vars robustly.
+
+    Accepts:
+      - A Python list (already parsed, e.g. from default)
+      - A JSON array string: '["http://a.com","http://b.com"]'
+      - A comma-separated string: 'http://a.com,http://b.com'
+    """
+    if isinstance(v, list):
+        return v
+    if isinstance(v, str):
+        v = v.strip()
+        # Try JSON array first
+        if v.startswith("["):
+            try:
+                parsed = json.loads(v)
+                if isinstance(parsed, list):
+                    return [origin.strip() for origin in parsed]
+            except (json.JSONDecodeError, ValueError):
+                pass
+        # Fall back to comma-separated
+        return [origin.strip() for origin in v.split(",") if origin.strip()]
+    return v
+
+
+# NoDecode prevents pydantic-settings from running json.loads() at the source level.
+# BeforeValidator then handles parsing before Pydantic's own type validation.
+CorsOriginsList = Annotated[List[str], NoDecode, BeforeValidator(parse_cors_origins)]
 
 
 class Settings(BaseSettings):
@@ -9,7 +40,6 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
-        case_sensitive=True,
         extra="ignore",
     )
 
@@ -27,13 +57,12 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
     # Database Settings (loaded dynamically from .env / OS env)
-    DATABASE_URL: str = "mysql+pymysql://user:password@localhost:3306/legalcase_management"
-
+    DATABASE_URL: str
     # Storage Settings
     UPLOAD_DIR: str = "uploads"
 
-    # CORS Settings
-    CORS_ORIGINS: List[str] = [
+    # CORS Settings — uses NoDecode to bypass pydantic-settings' source-level JSON parsing
+    CORS_ORIGINS: CorsOriginsList = [
         "http://localhost:5173",
         "http://localhost:3000",
         "http://127.0.0.1:5173",
