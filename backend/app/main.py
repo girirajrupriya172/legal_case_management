@@ -72,10 +72,11 @@ app = FastAPI(
 # Request logging middleware (added BEFORE CORS so we see ALL requests)
 app.add_middleware(RequestLoggingMiddleware)
 
-# Configure CORS Middleware dynamically from central settings
+# Configure CORS Middleware dynamically from central settings and allow all Vercel domains
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
