@@ -111,8 +111,9 @@ export const deleteDocument = async (documentId) => {
  */
 export const getPreviewUrl = (documentId) => {
   const token = localStorage.getItem("token");
-  const rawApiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
-  const baseUrl = rawApiUrl.endsWith("/api/v1") ? rawApiUrl : `${rawApiUrl.replace(/\/$/, "")}/api/v1`;
+  const rawUrl = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
+  let cleaned = rawUrl.trim().replace(/\/+$/, "");
+  const baseUrl = cleaned.endsWith("/api/v1") ? cleaned : `${cleaned}/api/v1`;
   return `${baseUrl}/documents/${documentId}/preview?token=${token || ""}`;
 };
 

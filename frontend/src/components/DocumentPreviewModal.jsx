@@ -18,8 +18,16 @@ import { downloadDocumentFile } from "../services/documentService";
  *   document  — document metadata object from DocumentResponse schema
  */
 
-const rawApiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
-const API_BASE_URL = rawApiUrl.endsWith("/api/v1") ? rawApiUrl : `${rawApiUrl.replace(/\/$/, "")}/api/v1`;
+const getNormalizedApiUrl = (url) => {
+  if (!url) return "http://localhost:8000/api/v1";
+  let cleaned = url.trim().replace(/\/+$/, "");
+  if (!cleaned.endsWith("/api/v1")) {
+    cleaned = `${cleaned}/api/v1`;
+  }
+  return cleaned;
+};
+
+const API_BASE_URL = getNormalizedApiUrl(import.meta.env.VITE_API_URL);
 
 // Helper: format bytes into human-readable size string
 const formatFileSize = (bytes) => {
