@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks, Request
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta, timezone
 from app.dependencies import get_db, get_current_user
@@ -17,6 +17,8 @@ from app.core.security import (
 )
 from app.models.user import User
 from app.core.email import send_password_reset_email
+from app.core.config import settings
+
 
 # Initialize the router instance
 router = APIRouter()
@@ -188,8 +190,13 @@ def logout(request_data: LogoutRequest, db: Session = Depends(get_db)):
         200: {"description": "Recovery email dispatched or request acknowledged."},
     },
 )
-def forgot_password(request_data: UserForgotPassword, db: Session = Depends(get_db)):
-    """Accept an email and dispatch a password recovery link."""
+def forgot_password(
+    request_data: UserForgotPassword,
+    background_tasks: BackgroundTasks,
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """Accept an email and dispatch a password recovery link asynchronously."""
     user = get_user_by_email(db, email=request_data.email)
     
     success_message = {"message": "Recovery instructions have been sent to your email."}
@@ -198,10 +205,29 @@ def forgot_password(request_data: UserForgotPassword, db: Session = Depends(get_
         return success_message
         
     reset_token = create_password_reset_token(email=user.email)
-    reset_url = f"http://localhost:5173/reset-password?token={reset_token}"
-    send_password_reset_email(email=user.email, token_url=reset_url)
+    
+    # Determine base frontend URL from Request headers or config
+    frontend_url = None
+    origin = request.headers.get("origin")
+    if origin:
+        frontend_url = origin.rstrip("/")
+    else:
+        referer = request.headers.get("referer")
+        if referer:
+            from urllib.parse import urlparse
+            parsed = urlparse(referer)
+            frontend_url = f"{parsed.scheme}://{parsed.netloc}"
+            
+    if not frontend_url:
+        frontend_url = getattr(settings, "FRONTEND_URL", "http://localhost:5173").rstrip("/")
+
+    reset_url = f"{frontend_url}/reset-password?token={reset_token}"
+    
+    # Dispatch email sending to background tasks so HTTP response is returned immediately
+    background_tasks.add_task(send_password_reset_email, email=user.email, token_url=reset_url)
     
     return success_message
+
 
 @router.post(
     "/reset-password",

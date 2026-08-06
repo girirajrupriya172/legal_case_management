@@ -59,12 +59,13 @@ def send_password_reset_email(email: str, token_url: str) -> None:
 
     # ── Send via SMTP (TLS) ───────────────────────────────────────────────────
     try:
-        with smtplib.SMTP(settings.MAIL_SERVER, settings.MAIL_PORT) as server:
+        with smtplib.SMTP(settings.MAIL_SERVER, settings.MAIL_PORT, timeout=10) as server:
             server.ehlo()
             server.starttls()
             server.login(settings.MAIL_USERNAME, settings.MAIL_PASSWORD)
             server.sendmail(settings.MAIL_FROM, email, msg.as_string())
         print(f"[EMAIL SUCCESS] Password-reset email sent to {email}")
+
     except smtplib.SMTPAuthenticationError as e:
         print(
             f"[EMAIL ERROR] SMTP authentication failed — check MAIL_USERNAME / MAIL_PASSWORD in .env. Detail: {e}"
