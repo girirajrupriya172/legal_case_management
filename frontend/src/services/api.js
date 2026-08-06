@@ -1,7 +1,8 @@
 import axios from "axios";
 
 // Base URL for the FastAPI backend service loaded dynamically from Vite environment
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
+const rawApiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
+const API_URL = rawApiUrl.endsWith("/api/v1") ? rawApiUrl : `${rawApiUrl.replace(/\/$/, "")}/api/v1`;
 
 // Create custom Axios instance
 const api = axios.create({
