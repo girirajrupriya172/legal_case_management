@@ -49,7 +49,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # --- Startup diagnostics ---
+    # --- Startup diagnostics & DB Initialization ---
     port = os.environ.get("PORT", "NOT SET")
     logger.info("=" * 60)
     logger.info(f"DIAGNOSTIC: PORT env var = {port}")
@@ -57,9 +57,23 @@ async def lifespan(app: FastAPI):
     logger.info(f"DIAGNOSTIC: DATABASE_URL set = {bool(settings.DATABASE_URL)}")
     logger.info(f"DIAGNOSTIC: Python version = {sys.version}")
     logger.info("=" * 60)
+    
+    # Auto-create tables if they don't exist and run seed
+    try:
+        logger.info("Ensuring database tables are initialized...")
+        Base.metadata.create_all(bind=engine)
+        db = SessionLocal()
+        try:
+            seed_database(db)
+        finally:
+            db.close()
+    except Exception as exc:
+        logger.error(f"Error during DB initialization/seeding: {exc}")
+        
     sys.stdout.flush()
     yield
     logger.info("Application shutting down.")
+
 
 
 app = FastAPI(

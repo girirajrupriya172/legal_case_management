@@ -40,5 +40,7 @@ frontend/out/
 # OS-specific files
 Thumbs.db
 db.json
+*.db
+*.sqlite
 .DS_Store
 DS_Store

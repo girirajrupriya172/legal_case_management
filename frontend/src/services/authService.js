@@ -6,19 +6,26 @@ import api from "./api";
  */
 const handleAxiosError = (error, defaultMessage) => {
   let errorMessage = defaultMessage;
-  if (error.response && error.response.data && error.response.data.detail) {
-    const detail = error.response.data.detail;
-    if (Array.isArray(detail)) {
-      // Maps each validator field to a human-readable format
-      errorMessage = detail
-        .map((err) => {
-          const field = err.loc && err.loc.length > 0 ? err.loc[err.loc.length - 1] : "";
-          return field ? `${field}: ${err.msg}` : err.msg;
-        })
-        .join(", ");
-    } else {
-      errorMessage = detail;
+  if (error.response) {
+    if (error.response.data && error.response.data.detail) {
+      const detail = error.response.data.detail;
+      if (Array.isArray(detail)) {
+        errorMessage = detail
+          .map((err) => {
+            const field = err.loc && err.loc.length > 0 ? err.loc[err.loc.length - 1] : "";
+            return field ? `${field}: ${err.msg}` : err.msg;
+          })
+          .join(", ");
+      } else if (typeof detail === "string") {
+        errorMessage = detail;
+      }
+    } else if (error.response.data && error.response.data.message) {
+      errorMessage = error.response.data.message;
+    } else if (error.response.status >= 500) {
+      errorMessage = `Server Error (${error.response.status}): Database or backend service unavailable.`;
     }
+  } else if (error.message) {
+    errorMessage = error.message;
   }
   return errorMessage;
 };
